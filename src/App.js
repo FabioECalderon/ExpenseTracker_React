@@ -15,7 +15,7 @@ const categoryList = [
   "Transportation",
 ];
 
-const baseURL = "https://expensetracker-backend-llm5.onrender.com/";
+const baseURL = "https://expensetracker-backend-llm5.onrender.com";
 
 const amountFormat = new Intl.NumberFormat("es-sp", {
   currency: "COP",
