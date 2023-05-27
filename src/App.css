@@ -49,6 +49,7 @@ video {
 button {
   min-width: 3ch;
   border-style: none;
+  cursor: pointer;
 }
 
 .deleteBtn,
@@ -83,7 +84,8 @@ button {
   align-items: center;
   padding: 0.5rem 1rem;
   gap: 4rem;
-  flex-wrap: wrap;
+  flex-direction: row-reverse;
+  flex-wrap: wrap-reverse;
 }
 .balanceCol {
   display: flex;
@@ -106,28 +108,41 @@ button {
 }
 
 .redText {
-  color: darkred;
+  color: rgb(158, 14, 14);
 }
 
 .greenText {
-  color: green;
+  color: rgb(29, 93, 29);
 }
 
 .inputForm {
   display: flex;
-  flex-direction: row;
+  gap: 1rem;
+  justify-content: space-around;
 }
 
 .inputData {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  display: flex;
+  flex-direction: column;
 }
 
+.descriptionInput {
+  width: stretch;
+  margin-bottom: 0.5rem;
+}
 .inputConfirm {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.alert {
+  border-radius: 5px;
+  background-color: lightsalmon;
+  margin: 1rem auto;
 }
 .sectionTitle {
   font-size: 1.5rem;
@@ -144,6 +159,8 @@ th {
   font-weight: 700;
   text-align: left;
   padding: 0.5rem;
+  color: white;
+  background-color: #333;
 }
 tr:nth-child(2n) {
   background: #eee;
@@ -155,9 +172,20 @@ td {
 }
 
 .description {
-  min-width: 30ch;
+  min-width: min(30ch, 20vh);
 }
 
 .amount {
-  width: 15ch;
+  max-width: 15ch;
+  text-align: right;
+}
+
+.category {
+  width: 16ch;
+  text-align: center;
+}
+
+.date {
+  max-width: 15ch;
+  text-align: center;
 }

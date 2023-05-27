@@ -3,24 +3,6 @@ import React, { useState, useEffect } from "react";
 
 const App = () => <ExpensesApp />;
 
-const mockData = [
-  {
-    description: "Book",
-    amount: 35000, //COP
-    category: "Education",
-    date: "20/5/2023",
-    id: "",
-  },
-
-  {
-    description: "Taxi ",
-    amount: 10000, //COP
-    category: "Transportation",
-    date: "19/5/2023",
-    id: "",
-  },
-];
-
 const categoryList = [
   "Clothing",
   "Education",
@@ -35,10 +17,18 @@ const categoryList = [
 
 const baseURL = "http://localhost:3001";
 
+const amountFormat = new Intl.NumberFormat("es-sp", {
+  currency: "COP",
+  maximumFractionDigits: 0,
+});
+let dateTemp = new Date(Date.now());
+let dateToday = dateTemp.toISOString().slice(0, 10);
+//const dateFormat = new Intl.DateTimeFormat("es-sp");
+
 const ExpensesApp = () => {
   const [expensesList, setExpensesList] = useState([]);
   const [totalExpenses, setTotalExpenses] = useState(0);
-  const [budget, setBudget] = useState(1000000);
+  const [budget, setBudget] = useState(100000);
 
   async function loadExpenses() {
     try {
@@ -46,6 +36,8 @@ const ExpensesApp = () => {
       if (response.ok) {
         const allExpenses = await response.json();
         setExpensesList(allExpenses);
+        let amountArray = allExpenses.map((obj) => obj.amount);
+        setTotalExpenses(amountArray.reduce((acc, cValue) => acc + cValue, 0));
       }
     } catch (error) {
       console.error(error);
@@ -68,6 +60,7 @@ const ExpensesApp = () => {
       if (response.ok) {
         const result = await response.json();
         setExpensesList([...expensesList, result]);
+        setTotalExpenses(totalExpenses + result.amount);
       }
     } catch (error) {
       console.error(error);
@@ -86,6 +79,7 @@ const ExpensesApp = () => {
           ...expensesList.slice(0, deletedIndex),
           ...expensesList.slice(deletedIndex + 1),
         ]);
+        setTotalExpenses(totalExpenses - selectedExpense.amount);
       }
     } catch (error) {
       console.error(error);
@@ -95,6 +89,7 @@ const ExpensesApp = () => {
   async function onEdit(editIndex, newExpense) {
     const selectedExpense = expensesList[editIndex];
     const { id } = selectedExpense;
+
     try {
       const response = await fetch(`${baseURL}/expenses/${id}`, {
         method: "PUT",
@@ -110,16 +105,13 @@ const ExpensesApp = () => {
           result,
           ...expensesList.slice(editIndex + 1),
         ]);
+        setExpensesList(expensesList);
+        let amountArray = expensesList.map((obj) => obj.amount);
+        setTotalExpenses(amountArray.reduce((acc, cValue) => acc + cValue, 0));
       }
     } catch (error) {
       console.error(error);
     }
-  }
-
-  function calcTotal() {
-    let amountArray = expensesList.map((obj) => obj.amount);
-    console.log(amountArray);
-    setTotalExpenses(amountArray.reduce((acc, cValue) => acc + cValue, 0));
   }
 
   function updateBudget(newBudget) {
@@ -134,12 +126,11 @@ const ExpensesApp = () => {
         budget={budget}
         updateBudget={updateBudget}
       />
-      <ExpensesForm onAdd={onAdd} calcTotal={calcTotal} />
+      <ExpensesForm onAdd={onAdd} />
       <ExpensesList
         fullList={expensesList}
         onDelete={onDelete}
         onEdit={onEdit}
-        calcTotal={calcTotal}
       />
     </div>
   );
@@ -168,8 +159,14 @@ const ExpensesBalance = ({ totalExpenses, budget, updateBudget }) => {
   return (
     <div id="balance" className="balanceInfo">
       <div className="balanceCol">
-        <span className="balanceTag">
-          BUDGET{" "}
+        <span className="balanceTag"> EXPENSES </span>
+        <span className="balanceData redText">
+          ${amountFormat.format(totalExpenses)}
+        </span>
+      </div>
+      <div className="balanceCol">
+        <div>
+          <span className="balanceTag">BUDGET </span>
           <button
             type="button"
             className={editBudget ? "confirmBtn" : "editBtn"}
@@ -177,8 +174,9 @@ const ExpensesBalance = ({ totalExpenses, budget, updateBudget }) => {
           >
             {editBudget ? <OkSVG /> : <EditSVG />}
           </button>
-        </span>
+        </div>
         <span className="balanceData greenText">
+          $
           {editBudget ? (
             <input
               type="number"
@@ -186,25 +184,27 @@ const ExpensesBalance = ({ totalExpenses, budget, updateBudget }) => {
               onChange={changeHandler}
             ></input>
           ) : (
-            budget
+            amountFormat.format(budget)
           )}
         </span>
       </div>
       <div className="balanceCol">
         <span className="balanceTag ">YOUR BALANCE </span>
-        <span className="balanceData {(budget>totalExpenses) ? greenText : redText}">
-          {budget - totalExpenses}
+        <span
+          className={
+            budget > totalExpenses
+              ? "balanceData greenText"
+              : "balanceData redText"
+          }
+        >
+          $ {amountFormat.format(budget - totalExpenses)}
         </span>
-      </div>
-      <div className="balanceCol">
-        <span className="balanceTag"> EXPENSES </span>
-        <span className="balanceData redText">{totalExpenses}</span>
       </div>
     </div>
   );
 };
 
-const ExpensesForm = ({ onAdd, calcTotal }) => {
+const ExpensesForm = ({ onAdd }) => {
   const [addAlert, setAddAlert] = useState(false);
   const [newCategory, setNewCategory] = useState("General expense");
 
@@ -213,52 +213,52 @@ const ExpensesForm = ({ onAdd, calcTotal }) => {
     const description = event.target.desc.value;
     const amount = Number(event.target.amount.value);
     const category = newCategory || "General expense";
-    const date =
-      event.target.date.value ||
-      Intl.DateTimeFormat(["ban", "id"]).format(Date.now());
-    //Intl.DateTimeFormat("es-sp", {dateStyle:"short", timeStyle: "full"} )
+    const date = event.target.date.value ? event.target.date.value : dateToday;
     const id = "";
-    if (description && amount) {
+    if (description && amount > 0) {
       setNewCategory(newCategory);
       onAdd({ description, amount, category, date, id });
-
-      calcTotal();
       if (addAlert) {
         setAddAlert(!addAlert);
       }
-    } else {
+    } else if (!addAlert) {
       setAddAlert(!addAlert);
     }
     event.target.reset();
+    setNewCategory("General expense");
   }
 
   return (
     <div id="form">
       <form onSubmit={handleSubmit} className="inputForm">
         <div className="inputData">
-          <input
-            type="text"
-            name="desc"
-            placeholder="Expense description"
-            className="inputDesc"
-          />
-          <input
-            type="number"
-            name="amount"
-            placeholder="Amount in COP"
-            className="amount"
-          />
-          <CatSelector
-            categoryList={categoryList}
-            input={newCategory}
-            setInput={setNewCategory}
-          />
-          <input
-            type="date"
-            className="amount"
-            name="date"
-            placeholder={Intl.DateTimeFormat(["ban", "id"]).format(Date.now())}
-          />
+          <div>
+            <input
+              type="text"
+              name="desc"
+              placeholder="Expense description"
+              className="descriptionInput"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              name="amount"
+              placeholder="Amount in COP"
+              className="amount"
+            />
+            <CatSelector
+              categoryList={categoryList}
+              input={newCategory}
+              setInput={setNewCategory}
+            />
+            <input
+              type="date"
+              className="date"
+              name="date"
+              placeholder={dateToday}
+            />
+          </div>
         </div>
         <div className="inputConfirm">
           <button className="addBtn" type="submit">
@@ -267,27 +267,13 @@ const ExpensesForm = ({ onAdd, calcTotal }) => {
         </div>
       </form>
       {addAlert ? (
-        <span className="alert">Description and amount are required</span>
+        <span className="alert">
+          Description is required and amount must be greater than 0.
+        </span>
       ) : (
         <span></span>
       )}
     </div>
-  );
-};
-
-const CatSelector = ({ categoryList, input, setInput }) => {
-  function changeHandler(event) {
-    console.log(event.target.value);
-    return setInput(event.target.value);
-  }
-
-  return (
-    <select onClick={changeHandler}>
-      <option selected>Expense type</option>
-      {categoryList.map((item, index) => {
-        return <option value={item}>{item}</option>;
-      })}
-    </select>
   );
 };
 
@@ -298,25 +284,20 @@ const ExpensesList = ({ fullList, onDelete, onEdit, calcTotal }) => {
       <table className="resultTable">
         <thead>
           <tr>
-            <th></th>
             <th className="description">Description</th>
             <th className="amount">Amount [COP]</th>
-            <th>Category</th>
-            <th className="amount">Date</th>
+            <th className="category">Category</th>
+            <th className="date">Date</th>
             <th></th>
           </tr>
         </thead>
-        {fullList.length ? (
-          <span> </span>
-        ) : (
-          <span className="alert">Nothing here for now. </span>
-        )}
         <tbody>
           {fullList.map((item, index) => {
             return (
               <Expense
                 expense={item}
                 index={index}
+                key={index}
                 onDelete={onDelete}
                 onEdit={onEdit}
                 calcTotal={calcTotal}
@@ -325,11 +306,16 @@ const ExpensesList = ({ fullList, onDelete, onEdit, calcTotal }) => {
           })}
         </tbody>
       </table>
+      {fullList.length ? (
+        <span> </span>
+      ) : (
+        <span className="alert">Nothing here for now... </span>
+      )}
     </div>
   );
 };
 
-const Expense = ({ expense, index, onDelete, onEdit, calcTotal }) => {
+const Expense = ({ expense, index, key, onDelete, onEdit }) => {
   const [itemEdit, setItemEdit] = useState(false);
   const [newDesc, setNewDesc] = useState(expense.description);
   const [newAmount, setNewAmount] = useState(expense.amount);
@@ -338,7 +324,6 @@ const Expense = ({ expense, index, onDelete, onEdit, calcTotal }) => {
 
   function deleteElement(event) {
     onDelete(index);
-    calcTotal();
   }
 
   function editElement(event) {
@@ -348,21 +333,19 @@ const Expense = ({ expense, index, onDelete, onEdit, calcTotal }) => {
       expense.category = newCat;
       expense.date = newDate;
       onEdit(index, expense);
-      calcTotal();
     }
     setItemEdit(!itemEdit);
   }
 
   return (
     <tr>
-      <td></td>
       <td className="description">
         {itemEdit ? (
           <EditInput
             input={newDesc}
             setInput={setNewDesc}
             inputType={"text"}
-            size={"20"}
+            size={"15"}
           />
         ) : (
           <span>{expense.description}</span>
@@ -374,13 +357,13 @@ const Expense = ({ expense, index, onDelete, onEdit, calcTotal }) => {
             input={newAmount}
             setInput={setNewAmount}
             inputType={"text"}
-            size={"8"}
+            size={"5"}
           />
         ) : (
-          <span>{expense.amount}</span>
+          <span>$ {amountFormat.format(expense.amount)}</span>
         )}
       </td>
-      <td className="amount">
+      <td className="category">
         {itemEdit ? (
           <CatSelector
             categoryList={categoryList}
@@ -391,7 +374,7 @@ const Expense = ({ expense, index, onDelete, onEdit, calcTotal }) => {
           <span>{expense.category}</span>
         )}
       </td>
-      <td className="amount">
+      <td className="category">
         {itemEdit ? (
           <EditInput input={newDate} setInput={setNewDate} inputType="date" />
         ) : (
@@ -411,6 +394,21 @@ const Expense = ({ expense, index, onDelete, onEdit, calcTotal }) => {
         </button>
       </td>
     </tr>
+  );
+};
+
+const CatSelector = ({ categoryList, input, setInput }) => {
+  function changeHandler(event) {
+    return setInput(event.target.value);
+  }
+
+  return (
+    <select onClick={changeHandler}>
+      <option selected>Expense type</option>
+      {categoryList.map((item, index) => {
+        return <option value={item}>{item}</option>;
+      })}
+    </select>
   );
 };
 
@@ -474,7 +472,7 @@ const DeleteSVG = () => {
       viewBox="0 0 24 24"
     >
       <path
-        fill="#dd7037"
+        fill="rgb(158, 14, 14)"
         d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12Z"
       />
     </svg>
