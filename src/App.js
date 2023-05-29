@@ -356,8 +356,8 @@ const Expense = ({ expense, index, key, onDelete, onEdit }) => {
           <EditInput
             input={newAmount}
             setInput={setNewAmount}
-            inputType={"text"}
-            size={"5"}
+            inputType={"number"}
+            className="amountInput"
           />
         ) : (
           <span>$ {amountFormat.format(expense.amount)}</span>
@@ -374,7 +374,7 @@ const Expense = ({ expense, index, key, onDelete, onEdit }) => {
           <span>{expense.category}</span>
         )}
       </td>
-      <td className="category">
+      <td className="date">
         {itemEdit ? (
           <EditInput input={newDate} setInput={setNewDate} inputType="date" />
         ) : (
@@ -401,12 +401,15 @@ const CatSelector = ({ categoryList, input, setInput }) => {
   function changeHandler(event) {
     return setInput(event.target.value);
   }
-
   return (
     <select onClick={changeHandler}>
-      <option selected>Expense type</option>
+      <option>Expense type</option>
       {categoryList.map((item, index) => {
-        return <option value={item}>{item}</option>;
+        return (
+          <option key={index} value={item}>
+            {item}
+          </option>
+        );
       })}
     </select>
   );
@@ -416,7 +419,6 @@ const EditInput = ({ input, setInput, inputType, size }) => {
   function changeHandler(event) {
     return setInput(event.target.value);
   }
-
   return (
     <input
       size={size}

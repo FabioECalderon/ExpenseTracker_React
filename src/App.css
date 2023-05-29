@@ -133,6 +133,11 @@ button {
   width: stretch;
   margin-bottom: 0.5rem;
 }
+
+.amountInput {
+  width: 5ch;
+}
+
 .inputConfirm {
   display: flex;
   justify-content: center;
@@ -180,12 +185,8 @@ td {
   text-align: right;
 }
 
-.category {
-  width: 16ch;
-  text-align: center;
-}
-
+.category,
 .date {
-  max-width: 15ch;
+  width: 15ch;
   text-align: center;
 }
